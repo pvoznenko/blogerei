@@ -1,35 +1,34 @@
 package controllers
 
-import models.User
 import tables.UserTable
-import play.api._
 import play.api.data._
 import play.api.data.Forms._
 import play.api.mvc._
+import scala.concurrent.Future
 
 class Auth extends Controller with UserTable {
-
   lazy val authForm = Form(
     tuple(
       "email" -> nonEmptyText,
-      "password" -> nonEmptyText) verifying ("Invalid user or password", result => result match {
-      case (email, password) => {
-        authenticate(email, password)
-      }
-      case _ => false
-    })
-  )
-
+      "password" -> nonEmptyText
+    ))
 
   def signInForm = Action {
     Ok(views.html.sign_in_form(authForm))
   }
 
-  def signIn = Action { implicit request =>
-    authForm.bindFromRequest.fold(
-      formWithErrors => BadRequest(views.html.sign_in_form(formWithErrors)),
-      user => Redirect(routes.Posts.index).withSession("email" -> user._1)
-    )
-  }
+  import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
+  def signIn = Action.async { implicit request =>
+    authForm.bindFromRequest.fold(
+      formWithErrors => Future(BadRequest(views.html.sign_in_form(formWithErrors))),
+      user => {
+        val (email, password) = user
+
+        for (
+          matchAmount <- authenticate(email, password)
+          if matchAmount > 0
+        ) yield Redirect(routes.Posts.index).withSession("email" -> email)
+      })
+  }
 }

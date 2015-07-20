@@ -1,18 +1,10 @@
 package tables
 
 import models.Post
-import scala.concurrent.Future
-import play.api.Play
-import play.api.db.slick.DatabaseConfigProvider
-import play.api.db.slick.HasDatabaseConfig
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import slick.driver.JdbcProfile
 import slick.lifted.Tag
 import slick.driver.PostgresDriver.api._
 
-
-trait PostTable extends HasDatabaseConfig[JdbcProfile]{
-  val dbConfig = DatabaseConfigProvider.get[JdbcProfile](Play.current)
+trait PostTable extends DBConnection {
 
   class Posts(tag: Tag) extends Table[Post](tag, "posts") {
 
